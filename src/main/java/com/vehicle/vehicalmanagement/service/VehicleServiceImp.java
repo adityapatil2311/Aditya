@@ -1,35 +1,24 @@
 package com.vehicle.vehicalmanagement.service;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 
-import com.lowagie.text.Paragraph;
-
-import com.lowagie.text.Document;
-import com.lowagie.text.Font;
-import com.lowagie.text.FontFactory;
-import com.lowagie.text.PageSize;
-import com.lowagie.text.pdf.PdfWriter;
 import com.vehicle.vehicalmanagement.bean.ExportPdf;
 import com.vehicle.vehicalmanagement.bean.Vehicle;
 import com.vehicle.vehicalmanagement.dto.VehicleDto;
@@ -38,6 +27,12 @@ import com.vehicle.vehicalmanagement.mapper.VehicleMapper;
 import com.vehicle.vehicalmanagement.payload.ApiResponse;
 import com.vehicle.vehicalmanagement.repository.VehicleRepository;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import jakarta.servlet.http.HttpServletResponse;
 
 @Service
@@ -56,6 +51,9 @@ public class VehicleServiceImp implements VehicleService {
 	@Autowired
 	private HttpServletResponse response;
 
+	@Autowired
+	private EntityManager manager;
+
 	@Override
 	@Cacheable(cacheNames = "getall", key = "#pageNumber,pageSize")
 	public ApiResponse<VehicleDto> getAllVehicles(int pageNumber, int pageSize) {
@@ -72,7 +70,7 @@ public class VehicleServiceImp implements VehicleService {
 	}
 
 	@Override
-	@CachePut(cacheNames = "Addcach", key = "#vehicleDto")
+	//@CachePut(cacheNames = "Addcach", key = "#vehicleDto")
 	public ApiResponse<VehicleDto> addVehicle(VehicleDto vehicleDto) {
 		try {
 			Vehicle vehicle = vehicleMapper.mapVehicleDtoToVehicle(vehicleDto);
@@ -89,7 +87,7 @@ public class VehicleServiceImp implements VehicleService {
 	}
 
 	@Override
-	@CacheEvict(cacheNames = "delete", key = "#id")
+	//@CacheEvict(cacheNames = "delete", key = "#id")
 	public ApiResponse<VehicleDto> deleteVehicleDto(int id) {
 //	   Vehicle vehicle =vehicleMapper.mapVehicleDtoToVehicle(id);
 //	    vehicleMapper.mapVehicleToVehicleDto(vehicle);
@@ -104,7 +102,7 @@ public class VehicleServiceImp implements VehicleService {
 	}
 
 	@Override
-	@CachePut(cacheNames = "update", key = "#vehicledto.id")
+	//@CachePut(cacheNames = "update", key = "#vehicledto.id")
 	public ApiResponse<VehicleDto> UpdateVehicle(VehicleDto vehicledto, int id) {
 		try {
 			Vehicle existingVehicle1 = repository.findById(id)
@@ -128,7 +126,7 @@ public class VehicleServiceImp implements VehicleService {
 	}
 
 	@Override
-	@Cacheable(cacheNames = "getid", key = "#id")
+	@Cacheable(cacheNames = "getid")//, key = "#id")
 	public ApiResponse<VehicleDto> getById(int id) {
 
 		try {
@@ -180,4 +178,47 @@ public class VehicleServiceImp implements VehicleService {
 		}
 
 	}
+
+	
+
+	
+
+	@Override
+	public List<Vehicle> FindByOwnerName( String ownerName) {
+		CriteriaBuilder builder=manager.getCriteriaBuilder();
+		CriteriaQuery<Vehicle>criteriaQuery=builder.createQuery(Vehicle.class);
+		Root<Vehicle>root=criteriaQuery.from(Vehicle.class);
+		criteriaQuery.select(root).where(builder.between(root.get("id"), 1, 3));
+		Predicate predicate=builder.like(root.get("ownerName"),"%"+ownerName+"%");
+		
+		
+		//Predicate predicate1=builder.equal(root.get("ownerName"),ownerName);
+		criteriaQuery.where(predicate);
+		//criteriaQuery.where(predicate1);
+		TypedQuery<Vehicle>query=manager.createQuery(criteriaQuery);
+		
+		
+		return query.getResultList();
+	}
+
+	@Override
+	public List<Vehicle> SearchAll(String vehicleRegistrationNumber, String ownerName, String brand) {
+		CriteriaBuilder builder=manager.getCriteriaBuilder();
+		CriteriaQuery<Vehicle>criteriaQuery=builder.createQuery(Vehicle.class);
+		Root<Vehicle>root=criteriaQuery.from(Vehicle.class);
+		
+		List<Predicate>predicates=new ArrayList<>();
+		if(vehicleRegistrationNumber !=null && !vehicleRegistrationNumber.isEmpty()) {
+			predicates.add(builder.like(root.get("vehicleRegistrationNumber"), "%"+vehicleRegistrationNumber+"%"));
+		}
+		else if (ownerName !=null && !ownerName.isEmpty()) {
+			predicates.add(builder.like(root.get("ownerName"), "%"+ownerName+"%"));
+		}
+		else if (brand !=null && !brand.isEmpty()) {
+			predicates.add(builder.like(root.get("brand"), "%"+brand+"%"));
+		}
+		criteriaQuery.select(root).where(predicates.toArray(new Predicate[0]));
+		return manager.createQuery(criteriaQuery).getResultList();
+	}
+
 }

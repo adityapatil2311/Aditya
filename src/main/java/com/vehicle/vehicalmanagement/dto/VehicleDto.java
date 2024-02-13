@@ -2,10 +2,6 @@ package com.vehicle.vehicalmanagement.dto;
 
 import java.time.LocalDateTime;
 
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
-import jakarta.persistence.Column;
 import lombok.Data;
 @Data
 public class VehicleDto {

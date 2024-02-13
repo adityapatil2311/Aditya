@@ -1,14 +1,10 @@
 package com.vehicle.vehicalmanagement.service;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 
 import com.vehicle.vehicalmanagement.bean.Vehicle;
 import com.vehicle.vehicalmanagement.dto.VehicleDto;
 import com.vehicle.vehicalmanagement.payload.ApiResponse;
-
-import jakarta.servlet.http.HttpServletResponse;
 
 public interface VehicleService {
 
@@ -25,5 +21,10 @@ public interface VehicleService {
 	String getVehicleByRestTemplate(int id);
 
 	void exportToPdf();
-
+ 
+	
+	 
+	List<Vehicle> FindByOwnerName(String ownerName);
+	List<Vehicle> SearchAll(String vehicleRegistrationNumber,String ownerName, String brand );
+	
 }

@@ -19,7 +19,9 @@ public class VehicalManagementApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(VehicalManagementApplication.class, args);
+	
 		
+
 	}
 
 }
